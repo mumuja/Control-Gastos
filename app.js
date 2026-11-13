@@ -32,20 +32,39 @@ const tabSignup = document.getElementById('tab-signup');
 const txForm = document.getElementById('tx-form');
 const txList = document.getElementById('tx-list');
 const fechaInput = document.getElementById('fecha');
+const estadoSelect = document.getElementById('estado');
+const addCalendarCheck = document.getElementById('add-calendar');
 const monthFilter = document.getElementById('month-filter');
 const categoryFilter = document.getElementById('category-filter');
 const categoriaSelect = document.getElementById('categoria');
 
-let authMode = 'login'; // 'login' | 'signup'
-let chartMode = 'balance'; // 'balance' | 'cats'
+let authMode = 'login';
+let chartMode = 'balance';
 let chartInstance = null;
 let movimientosCache = [];
 let categoriasCache = [];
 
-// Configurar fechas iniciales
-const hoy = new Date();
-fechaInput.valueAsDate = hoy;
-monthFilter.value = hoy.toISOString().slice(0, 7);
+// Configurar fechas iniciales en hora local
+function obtenerFechaLocalISO(dateObj = new Date()) {
+  const offset = dateObj.getTimezoneOffset();
+  const local = new Date(dateObj.getTime() - offset * 60000);
+  return local.toISOString().slice(0, 10);
+}
+
+const hoyStr = obtenerFechaLocalISO();
+fechaInput.value = hoyStr;
+monthFilter.value = hoyStr.slice(0, 7);
+
+// Automatización inteligente: si eliges una fecha futura, cambia a "Programado" y marca Calendar
+fechaInput.addEventListener('change', () => {
+  if (fechaInput.value > obtenerFechaLocalISO()) {
+    estadoSelect.value = 'pendiente';
+    addCalendarCheck.checked = true;
+  } else {
+    estadoSelect.value = 'pagado';
+    addCalendarCheck.checked = false;
+  }
+});
 
 // --- TABS DE LOGIN / REGISTRO ---
 function mostrarFeedbackAuth(mensaje, esError = true) {
@@ -129,7 +148,7 @@ authForm.addEventListener('submit', async (e) => {
       } else if (data.session) {
         await checkSession();
       } else {
-        mostrarFeedbackAuth('Cuenta creada. Revisa tu correo para confirmar o desactiva "Confirm email" en Supabase.', false);
+        mostrarFeedbackAuth('Cuenta creada. Revisa tu correo o desactiva "Confirm email" en Supabase.', false);
       }
     }
   } catch (err) {
@@ -250,7 +269,7 @@ btnChartCats.addEventListener('click', () => {
   renderizarUI();
 });
 
-function actualizarGrafico(ingresos, gastos, movimientosMes) {
+function actualizarGrafico(ingresos, gastos, movimientosPagadosMes) {
   const canvas = document.getElementById('finance-chart');
   const emptyMsg = document.getElementById('chart-empty-msg');
 
@@ -282,9 +301,7 @@ function actualizarGrafico(ingresos, gastos, movimientosMes) {
       options: {
         responsive: true,
         maintainAspectRatio: false,
-        plugins: {
-          legend: { display: false }
-        },
+        plugins: { legend: { display: false } },
         scales: {
           y: {
             beginAtZero: true,
@@ -299,8 +316,7 @@ function actualizarGrafico(ingresos, gastos, movimientosMes) {
       }
     });
   } else {
-    // Agrupar gastos por categoría
-    const soloGastos = movimientosMes.filter(m => m.tipo === 'gasto');
+    const soloGastos = movimientosPagadosMes.filter(m => m.tipo === 'gasto');
     if (soloGastos.length === 0) {
       canvas.classList.add('hidden');
       emptyMsg.classList.remove('hidden');
@@ -379,12 +395,13 @@ txForm.addEventListener('submit', async (e) => {
   const monto = parseFloat(document.getElementById('monto').value);
   const fecha = document.getElementById('fecha').value;
   const categoria = document.getElementById('categoria').value;
+  const estado = document.getElementById('estado').value;
   const descripcion = document.getElementById('descripcion').value.trim();
   const agendarCalendar = document.getElementById('add-calendar').checked;
 
   const { error } = await supabaseClient
     .from('movimientos')
-    .insert([{ tipo, monto, fecha, categoria, descripcion }]);
+    .insert([{ tipo, monto, fecha, categoria, descripcion, estado }]);
 
   btn.disabled = false;
   btn.textContent = 'Guardar Movimiento';
@@ -397,10 +414,22 @@ txForm.addEventListener('submit', async (e) => {
     }
     document.getElementById('monto').value = '';
     document.getElementById('descripcion').value = '';
-    document.getElementById('add-calendar').checked = false;
+    fechaInput.value = obtenerFechaLocalISO();
+    estadoSelect.value = 'pagado';
+    addCalendarCheck.checked = false;
     cargarMovimientos();
   }
 });
+
+// Marcar un pago futuro como ya ejecutado
+async function marcarComoPagado(id) {
+  const { error } = await supabaseClient
+    .from('movimientos')
+    .update({ estado: 'pagado', fecha: obtenerFechaLocalISO() })
+    .eq('id', id);
+
+  if (!error) cargarMovimientos();
+}
 
 async function eliminarMovimiento(id) {
   if (!confirm('¿Eliminar este registro?')) return;
@@ -408,12 +437,74 @@ async function eliminarMovimiento(id) {
   if (!error) cargarMovimientos();
 }
 
+function calcularDiasRestantes(fechaStr) {
+  const hoy = new Date(obtenerFechaLocalISO() + 'T00:00:00');
+  const objetivo = new Date(fechaStr + 'T00:00:00');
+  const diffDias = Math.round((objetivo - hoy) / (1000 * 60 * 60 * 24));
+  if (diffDias < 0) return `Atrasado ${Math.abs(diffDias)}d`;
+  if (diffDias === 0) return 'Vence hoy';
+  if (diffDias === 1) return 'Mañana';
+  return `En ${diffDias} días`;
+}
+
 function renderizarUI() {
   const mesSeleccionado = monthFilter.value;
   const catSeleccionada = categoryFilter.value;
 
-  const delMes = movimientosCache.filter(m => mesSeleccionado ? m.fecha.startsWith(mesSeleccionado) : true);
-  const filtrados = delMes.filter(m => catSeleccionada === 'TODAS' ? true : m.categoria === catSeleccionada);
+  // 1. Separar pendientes (todos los programados a futuro o sin pagar)
+  const pendientes = movimientosCache
+    .filter(m => m.estado === 'pendiente')
+    .sort((a, b) => a.fecha.localeCompare(b.fecha));
+
+  const upcomingSection = document.getElementById('upcoming-section');
+  const upcomingList = document.getElementById('upcoming-list');
+  const pendingBadge = document.getElementById('pending-badge');
+
+  if (pendientes.length > 0) {
+    upcomingSection.classList.remove('hidden');
+    pendingBadge.classList.remove('hidden');
+    document.getElementById('upcoming-count').textContent = `${pendientes.length} pendiente(s)`;
+
+    const totalPendienteGastos = pendientes
+      .filter(p => p.tipo === 'gasto')
+      .reduce((acc, p) => acc + Number(p.monto), 0);
+    document.getElementById('pendiente-total').textContent = `$${totalPendienteGastos.toFixed(2)}`;
+
+    upcomingList.innerHTML = pendientes.map(p => {
+      const esGasto = p.tipo === 'gasto';
+      const etiquetaDias = calcularDiasRestantes(p.fecha);
+      const calData = encodeURIComponent(JSON.stringify(p));
+      return `
+        <div class="bg-slate-900/90 border border-amber-800/40 p-3 rounded-xl flex justify-between items-center">
+          <div>
+            <div class="flex items-center gap-2">
+              <p class="text-sm font-semibold text-slate-100">${p.descripcion || p.categoria}</p>
+              <span class="text-[10px] px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 font-medium">${etiquetaDias}</span>
+            </div>
+            <p class="text-xs text-slate-400">${p.categoria} • ${p.fecha}</p>
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="text-sm font-bold ${esGasto ? 'text-amber-400' : 'text-emerald-400'}">$${Number(p.monto).toFixed(2)}</span>
+            <button onclick="marcarComoPagado('${p.id}')" title="Marcar como pagado hoy" class="bg-emerald-600/20 hover:bg-emerald-600 text-emerald-300 hover:text-white border border-emerald-600/40 text-xs px-2 py-1 rounded-lg transition">✓</button>
+            <button onclick="recordarExistente('${calData}')" title="Recordatorio Calendar" class="text-slate-400 hover:text-indigo-400 text-xs">📅</button>
+            <button onclick="eliminarMovimiento('${p.id}')" title="Eliminar" class="text-slate-600 hover:text-rose-400 text-xs px-1">✕</button>
+          </div>
+        </div>
+      `;
+    }).join('');
+  } else {
+    upcomingSection.classList.add('hidden');
+    pendingBadge.classList.add('hidden');
+  }
+
+  // 2. Filtrar historial ejecutado (pagado) del mes seleccionado
+  const pagadosMes = movimientosCache.filter(m => {
+    const esPagado = m.estado !== 'pendiente';
+    const coincideMes = mesSeleccionado ? m.fecha.startsWith(mesSeleccionado) : true;
+    return esPagado && coincideMes;
+  });
+
+  const filtrados = pagadosMes.filter(m => catSeleccionada === 'TODAS' ? true : m.categoria === catSeleccionada);
 
   let ingresos = 0;
   let gastos = 0;
@@ -428,10 +519,10 @@ function renderizarUI() {
   document.getElementById('ingresos-total').textContent = `+$${ingresos.toFixed(2)}`;
   document.getElementById('gastos-total').textContent = `-$${gastos.toFixed(2)}`;
 
-  actualizarGrafico(ingresos, gastos, delMes);
+  actualizarGrafico(ingresos, gastos, pagadosMes);
 
   txList.innerHTML = filtrados.length === 0 
-    ? '<p class="text-center text-slate-500 text-xs py-6">No hay movimientos en este filtro.</p>'
+    ? '<p class="text-center text-slate-500 text-xs py-6">No hay movimientos ejecutados en este filtro.</p>'
     : filtrados.map(m => {
         const esIngreso = m.tipo === 'ingreso';
         const colorMonto = esIngreso ? 'text-emerald-400' : 'text-rose-400';
@@ -470,16 +561,16 @@ categoryFilter.addEventListener('change', renderizarUI);
 // Exportar CSV
 document.getElementById('export-btn').addEventListener('click', () => {
   if (movimientosCache.length === 0) return alert('No hay datos para exportar.');
-  const headers = ['Fecha', 'Tipo', 'Categoria', 'Descripcion', 'Monto'];
+  const headers = ['Fecha', 'Estado', 'Tipo', 'Categoria', 'Descripcion', 'Monto'];
   const rows = movimientosCache.map(m => [
-    m.fecha, m.tipo, `"${m.categoria}"`, `"${m.descripcion || ''}"`, m.monto
+    m.fecha, m.estado || 'pagado', m.tipo, `"${m.categoria}"`, `"${m.descripcion || ''}"`, m.monto
   ]);
   const csvContent = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
   const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `respaldo_gastos_${new Date().toISOString().slice(0,10)}.csv`;
+  a.download = `respaldo_gastos_${obtenerFechaLocalISO()}.csv`;
   a.click();
 });
 
