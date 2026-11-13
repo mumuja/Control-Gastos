@@ -1,5 +1,5 @@
 // REEMPLAZA ESTOS DOS VALORES CON LOS DE TU PROYECTO SUPABASE
-const SUPABASE_URL = 'https://stzukfgxwsjuztjjmfov.supabase.co/rest/v1/';
+const SUPABASE_URL = 'https://stzukfgxwsjuztjjmfov.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_sdKNxaC0HQUeGa3thZQAIg_yFoYwa3Z';
 
 let supabaseClient = null;
