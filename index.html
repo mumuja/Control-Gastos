@@ -19,7 +19,6 @@
       <h1 class="text-2xl font-bold text-emerald-400 mb-1">Mis Finanzas</h1>
       <p id="auth-subtitle" class="text-slate-400 text-sm mb-5">Inicia sesión para sincronizar tus datos</p>
 
-      <!-- Tabs Login / Registro -->
       <div class="grid grid-cols-2 gap-1 bg-slate-950 p-1 rounded-xl mb-5">
         <button type="button" id="tab-login" class="py-1.5 text-xs font-semibold rounded-lg bg-slate-800 text-white transition">Iniciar Sesión</button>
         <button type="button" id="tab-signup" class="py-1.5 text-xs font-semibold rounded-lg text-slate-400 hover:text-white transition">Crear Cuenta</button>
@@ -57,20 +56,37 @@
       </div>
     </header>
 
-    <!-- Tarjeta de Balance -->
+    <!-- Tarjeta de Balance Real -->
     <section class="bg-gradient-to-br from-slate-900 to-slate-800 border border-slate-700/60 p-5 rounded-2xl shadow-lg">
-      <p class="text-xs text-slate-400 uppercase tracking-wider">Balance del periodo</p>
-      <h2 id="balance-total" class="text-3xl font-extrabold text-white mt-1">$0.00</h2>
+      <div class="flex justify-between items-start">
+        <div>
+          <p class="text-xs text-slate-400 uppercase tracking-wider">Balance real del periodo</p>
+          <h2 id="balance-total" class="text-3xl font-extrabold text-white mt-1">$0.00</h2>
+        </div>
+        <div id="pending-badge" class="hidden text-right">
+          <p class="text-[11px] text-amber-400 font-medium">Por pagar (futuro)</p>
+          <p id="pendiente-total" class="text-sm font-bold text-amber-300">$0.00</p>
+        </div>
+      </div>
       <div class="grid grid-cols-2 gap-4 mt-4 pt-4 border-t border-slate-700/50">
         <div>
-          <p class="text-xs text-slate-400">Ingresos</p>
+          <p class="text-xs text-slate-400">Ingresos recibidos</p>
           <p id="ingresos-total" class="text-base font-semibold text-emerald-400">+$0.00</p>
         </div>
         <div>
-          <p class="text-xs text-slate-400">Gastos</p>
+          <p class="text-xs text-slate-400">Gastos pagados</p>
           <p id="gastos-total" class="text-base font-semibold text-rose-400">-$0.00</p>
         </div>
       </div>
+    </section>
+
+    <!-- SECCIÓN DE PRÓXIMOS PAGOS / PROGRAMADOS -->
+    <section id="upcoming-section" class="hidden bg-amber-950/20 border border-amber-800/40 p-4 rounded-2xl space-y-2.5">
+      <div class="flex justify-between items-center">
+        <h3 class="text-xs font-bold uppercase tracking-wider text-amber-400">⏳ Pagos / Movimientos Programados</h3>
+        <span id="upcoming-count" class="text-xs text-amber-300/70"></span>
+      </div>
+      <div id="upcoming-list" class="space-y-2"></div>
     </section>
 
     <!-- SECCIÓN DE GRÁFICOS -->
@@ -119,9 +135,17 @@
             <select id="categoria" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-emerald-500"></select>
           </div>
           <div>
-            <label class="block text-xs text-slate-400 mb-1">Nota (opcional)</label>
-            <input type="text" id="descripcion" placeholder="Ej. Gasolina, Súper" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-emerald-500">
+            <label class="block text-xs text-slate-400 mb-1">Estado</label>
+            <select id="estado" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-emerald-500">
+              <option value="pagado">Ya pagado / recibido</option>
+              <option value="pendiente">Programado (a futuro)</option>
+            </select>
           </div>
+        </div>
+
+        <div>
+          <label class="block text-xs text-slate-400 mb-1">Nota (opcional)</label>
+          <input type="text" id="descripcion" placeholder="Ej. Pago tarjeta, Seguro carro, Recibo luz" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-emerald-500">
         </div>
 
         <!-- Opción de Recordatorio en Google Calendar -->
@@ -139,7 +163,7 @@
     <!-- Filtro por Categoría e Historial -->
     <section class="space-y-3">
       <div class="flex justify-between items-center gap-2">
-        <h3 class="text-sm font-semibold text-slate-300">Movimientos</h3>
+        <h3 class="text-sm font-semibold text-slate-300">Historial Ejecutado</h3>
         <select id="category-filter" class="bg-slate-900 border border-slate-800 text-xs text-slate-300 rounded-lg px-2 py-1 focus:outline-none">
           <option value="TODAS">Todas las categorías</option>
         </select>
