@@ -1,8 +1,8 @@
-const CACHE_NAME = 'gastos-pwa-v4';
+const CACHE_NAME = 'gastos-pwa-v5';
 const ASSETS = ['./', './index.html', './app.js', './manifest.json'];
 
 self.addEventListener('install', (e) => {
-  self.skipWaiting(); // Fuerza a activar la nueva versión inmediatamente
+  self.skipWaiting();
   e.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS)));
 });
 
@@ -15,8 +15,9 @@ self.addEventListener('activate', (e) => {
 });
 
 self.addEventListener('fetch', (e) => {
-  if (e.request.url.includes('supabase.co')) return;
-  // Network First: siempre busca lo último en GitHub; si no hay internet, usa caché
+  // Ignorar extensiones de Chrome y peticiones a Supabase
+  if (!e.request.url.startsWith('http') || e.request.url.includes('supabase.co')) return;
+
   e.respondWith(
     fetch(e.request)
       .then((res) => {
