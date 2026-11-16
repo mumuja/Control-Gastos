@@ -1,6 +1,6 @@
 // PEGA AQUÍ TUS CREDENCIALES REALES DE SUPABASE
-const SUPABASE_URL = 'https://TU-PROYECTO.supabase.co';
-const SUPABASE_ANON_KEY = 'sb_publishable_TU_LLAVE';
+const SUPABASE_URL = 'https://stzukfgxwsjuztjjmfov.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_sdKNxaC0HQUeGa3thZQAIg_yFoYwa3Z';
 
 let supabaseClient = null;
 const credencialesConfiguradas = !SUPABASE_URL.includes('TU-PROYECTO') && !SUPABASE_ANON_KEY.includes('TU_LLAVE');
