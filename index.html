@@ -65,7 +65,35 @@
         </div>
       </div>
     </header>
+    
+<!-- Header Responsivo (2 filas limpias para móvil) -->
+    <header class="space-y-2.5 pt-1">
+      <!-- Fila 1: Selector de Espacio y Botón Familia -->
+      <div class="flex items-center gap-2">
+        <select id="workspace-select" class="flex-1 min-w-0 truncate bg-slate-900 border border-indigo-500/40 text-indigo-300 font-bold text-sm rounded-xl px-3 py-2 focus:outline-none">
+          <option value="PERSONAL">👤 Fondo Personal</option>
+        </select>
+        <button id="open-group-modal" title="Crear o unirse a grupo familiar" class="shrink-0 whitespace-nowrap bg-slate-800 hover:bg-slate-700 text-indigo-300 border border-indigo-500/40 text-xs font-semibold px-3 py-2 rounded-xl transition">
+          + Familia
+        </button>
+      </div>
 
+      <!-- Fila 2: Filtro de Mes y Botones de Herramientas -->
+      <div class="flex items-center justify-between gap-2">
+        <input type="month" id="month-filter" class="bg-slate-900/60 border border-slate-800 rounded-lg px-2 py-1 text-xs text-slate-300 focus:outline-none cursor-pointer">
+        <div class="flex items-center gap-1.5">
+          <button id="open-cat-modal" class="whitespace-nowrap bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium px-2.5 py-1.5 rounded-lg border border-slate-700 transition">Categorías</button>
+          <button id="export-btn" title="Exportar CSV" class="whitespace-nowrap bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium px-2.5 py-1.5 rounded-lg border border-slate-700 transition">CSV</button>
+          <button id="logout-btn" title="Cerrar sesión" class="whitespace-nowrap bg-slate-800 hover:bg-rose-950 text-rose-400 text-xs font-medium px-2.5 py-1.5 rounded-lg border border-slate-700 transition">Salir</button>
+        </div>
+      </div>
+
+      <!-- Fila 3 (solo visible dentro de un grupo familiar): Código y Eliminar grupo -->
+      <div id="group-actions-bar" class="hidden flex items-center justify-between bg-slate-900/80 border border-slate-800 rounded-lg px-3 py-1.5">
+        <span id="group-code-badge" class="text-[11px] text-slate-400 font-mono"></span>
+        <button id="delete-group-btn" title="Eliminar o salir del grupo" class="text-[11px] bg-rose-950/60 hover:bg-rose-900 text-rose-300 border border-rose-800/50 px-2 py-0.5 rounded-md transition">Eliminar grupo</button>
+      </div>
+    </header>
     <!-- Tarjeta de Balance Real -->
     <section class="bg-gradient-to-br from-slate-900 to-slate-800 border border-slate-700/60 p-5 rounded-2xl shadow-lg">
       <div class="flex justify-between items-start">
