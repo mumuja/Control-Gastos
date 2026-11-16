@@ -59,7 +59,10 @@
 
       <div class="flex justify-between items-center px-1">
         <input type="month" id="month-filter" class="bg-transparent text-xs text-slate-400 focus:outline-none cursor-pointer">
-        <span id="group-code-badge" class="hidden text-[11px] bg-slate-900 border border-slate-800 text-slate-400 px-2 py-0.5 rounded-md"></span>
+        <div id="group-actions-bar" class="hidden flex items-center gap-2">
+          <span id="group-code-badge" class="text-[11px] bg-slate-900 border border-slate-800 text-slate-400 px-2 py-0.5 rounded-md"></span>
+          <button id="delete-group-btn" title="Eliminar o salir del grupo" class="text-[11px] bg-rose-950/60 hover:bg-rose-900 text-rose-300 border border-rose-800/50 px-2 py-0.5 rounded-md transition">Eliminar grupo</button>
+        </div>
       </div>
     </header>
 
