@@ -10,7 +10,6 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <link rel="icon" type="image/png" href="https://cdn-icons-png.flaticon.com/512/2344/2344132.png">
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen font-sans antialiased pb-24">
 
@@ -55,4 +54,240 @@
       </div>
 
       <!-- Fila 2: Filtro de Mes y Botones de Herramientas -->
-      <div
+      <div class="flex items-center justify-between gap-2">
+        <input type="month" id="month-filter" class="bg-slate-900/60 border border-slate-800 rounded-lg px-2 py-1 text-xs text-slate-300 focus:outline-none cursor-pointer">
+        <div class="flex items-center gap-1.5">
+          <button id="open-cat-modal" class="whitespace-nowrap bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium px-2.5 py-1.5 rounded-lg border border-slate-700 transition">Categorías</button>
+          <button id="export-btn" title="Exportar CSV" class="whitespace-nowrap bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium px-2.5 py-1.5 rounded-lg border border-slate-700 transition">CSV</button>
+          <button id="logout-btn" title="Cerrar sesión" class="whitespace-nowrap bg-slate-800 hover:bg-rose-950 text-rose-400 text-xs font-medium px-2.5 py-1.5 rounded-lg border border-slate-700 transition">Salir</button>
+        </div>
+      </div>
+
+      <!-- Fila 3 (solo visible dentro de un grupo familiar): Código y Eliminar grupo -->
+      <div id="group-actions-bar" class="hidden flex items-center justify-between bg-slate-900/80 border border-slate-800 rounded-lg px-3 py-1.5">
+        <span id="group-code-badge" class="text-[11px] text-slate-400 font-mono"></span>
+        <button id="delete-group-btn" title="Eliminar o salir del grupo" class="text-[11px] bg-rose-950/60 hover:bg-rose-900 text-rose-300 border border-rose-800/50 px-2 py-0.5 rounded-md transition">Eliminar grupo</button>
+      </div>
+    </header>
+
+    <!-- Tarjeta de Balance Real -->
+    <section class="bg-gradient-to-br from-slate-900 to-slate-800 border border-slate-700/60 p-5 rounded-2xl shadow-lg">
+      <div class="flex justify-between items-start">
+        <div>
+          <p id="balance-label" class="text-xs text-slate-400 uppercase tracking-wider">Balance real del periodo</p>
+          <h2 id="balance-total" class="text-3xl font-extrabold text-white mt-1">$0.00</h2>
+        </div>
+        <div id="pending-badge" class="hidden text-right">
+          <p class="text-[11px] text-amber-400 font-medium">Por pagar (futuro)</p>
+          <p id="pendiente-total" class="text-sm font-bold text-amber-300">$0.00</p>
+        </div>
+      </div>
+      <div class="grid grid-cols-2 gap-4 mt-4 pt-4 border-t border-slate-700/50">
+        <div>
+          <p class="text-xs text-slate-400">Ingresos recibidos</p>
+          <p id="ingresos-total" class="text-base font-semibold text-emerald-400">+$0.00</p>
+        </div>
+        <div>
+          <p class="text-xs text-slate-400">Gastos pagados</p>
+          <p id="gastos-total" class="text-base font-semibold text-rose-400">-$0.00</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- APARTADO DE AHORROS (INDIVIDUAL O CONJUNTO) -->
+    <section class="bg-slate-900 border border-slate-800 p-4 rounded-2xl space-y-3">
+      <div class="flex justify-between items-center">
+        <div>
+          <h3 class="text-xs font-bold uppercase tracking-wider text-cyan-400">🎯 Metas de Ahorro</h3>
+          <p id="savings-subtitle" class="text-[11px] text-slate-500">Ahorro personal</p>
+        </div>
+        <button id="open-saving-modal" class="bg-cyan-600/20 hover:bg-cyan-600/30 text-cyan-300 border border-cyan-500/30 text-xs font-semibold px-2.5 py-1 rounded-lg">+ Nueva Meta</button>
+      </div>
+      <div id="savings-list" class="space-y-2.5">
+        <p class="text-xs text-slate-500 text-center py-2">Aún no tienes metas de ahorro aquí.</p>
+      </div>
+    </section>
+
+    <!-- SECCIÓN DE PRÓXIMOS PAGOS / PROGRAMADOS -->
+    <section id="upcoming-section" class="hidden bg-amber-950/20 border border-amber-800/40 p-4 rounded-2xl space-y-2.5">
+      <div class="flex justify-between items-center">
+        <h3 class="text-xs font-bold uppercase tracking-wider text-amber-400">⏳ Pagos / Movimientos Programados</h3>
+        <span id="upcoming-count" class="text-xs text-amber-300/70"></span>
+      </div>
+      <div id="upcoming-list" class="space-y-2"></div>
+    </section>
+
+    <!-- SECCIÓN DE GRÁFICOS -->
+    <section class="bg-slate-900 border border-slate-800 p-4 rounded-2xl space-y-3">
+      <div class="flex justify-between items-center">
+        <h3 class="text-xs font-semibold uppercase tracking-wider text-slate-400">Resumen Visual</h3>
+        <div class="flex bg-slate-950 p-0.5 rounded-lg text-xs">
+          <button type="button" id="chart-mode-balance" class="px-2.5 py-1 rounded-md bg-slate-800 text-white font-medium">Ingresos vs Gastos</button>
+          <button type="button" id="chart-mode-cats" class="px-2.5 py-1 rounded-md text-slate-400 hover:text-white">Por Categoría</button>
+        </div>
+      </div>
+      <div class="relative h-52 w-full flex items-center justify-center">
+        <canvas id="finance-chart"></canvas>
+        <p id="chart-empty-msg" class="hidden text-xs text-slate-500">Sin datos suficientes este mes para graficar</p>
+      </div>
+    </section>
+
+    <!-- Formulario Rápido -->
+    <section class="bg-slate-900 border border-slate-800 p-4 rounded-2xl">
+      <form id="tx-form" class="space-y-3">
+        <div class="grid grid-cols-2 gap-2 bg-slate-950 p-1 rounded-xl">
+          <label class="cursor-pointer">
+            <input type="radio" name="tipo" value="gasto" checked class="peer sr-only">
+            <div class="text-center text-xs font-semibold py-2 rounded-lg text-slate-400 peer-checked:bg-rose-600 peer-checked:text-white transition">Gasto</div>
+          </label>
+          <label class="cursor-pointer">
+            <input type="radio" name="tipo" value="ingreso" class="peer sr-only">
+            <div class="text-center text-xs font-semibold py-2 rounded-lg text-slate-400 peer-checked:bg-emerald-600 peer-checked:text-white transition">Ingreso / Aporte</div>
+          </label>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs text-slate-400 mb-1">Monto ($)</label>
+            <input type="number" step="0.01" id="monto" placeholder="0.00" required class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-emerald-500">
+          </div>
+          <div>
+            <label class="block text-xs text-slate-400 mb-1">Fecha</label>
+            <input type="date" id="fecha" required class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-emerald-500">
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs text-slate-400 mb-1">Categoría</label>
+            <select id="categoria" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-emerald-500"></select>
+          </div>
+          <div>
+            <label class="block text-xs text-slate-400 mb-1">Estado</label>
+            <select id="estado" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-emerald-500">
+              <option value="pagado">Ya pagado / recibido</option>
+              <option value="pendiente">Programado (a futuro)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3 items-end">
+          <div>
+            <label class="block text-xs text-slate-400 mb-1">Nota (opcional)</label>
+            <input type="text" id="descripcion" placeholder="Ej. Súper, Transferencia" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-emerald-500">
+          </div>
+          <div>
+            <label class="block text-xs text-slate-400 mb-1">Recibo (foto opcional)</label>
+            <label class="flex items-center justify-center gap-1.5 w-full bg-slate-800 hover:bg-slate-750 border border-dashed border-slate-600 rounded-lg px-3 py-2 text-xs text-slate-300 cursor-pointer truncate">
+              <span>📎</span>
+              <span id="receipt-file-label" class="truncate">Adjuntar imagen</span>
+              <input type="file" id="recibo-input" accept="image/*" class="hidden">
+            </label>
+          </div>
+        </div>
+
+        <div class="flex items-center justify-between pt-1">
+          <label class="flex items-center gap-2 cursor-pointer text-xs text-slate-300">
+            <input type="checkbox" id="add-calendar" class="rounded bg-slate-800 border-slate-700 text-indigo-500 focus:ring-0">
+            <span>Agendar recordatorio en Google Calendar</span>
+          </label>
+        </div>
+
+        <button type="submit" id="save-btn" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-semibold py-2.5 rounded-xl text-sm transition">Guardar Movimiento</button>
+      </form>
+    </section>
+
+    <!-- Filtro por Categoría e Historial -->
+    <section class="space-y-3">
+      <div class="flex justify-between items-center gap-2">
+        <h3 class="text-sm font-semibold text-slate-300">Historial Ejecutado</h3>
+        <select id="category-filter" class="bg-slate-900 border border-slate-800 text-xs text-slate-300 rounded-lg px-2 py-1 focus:outline-none">
+          <option value="TODAS">Todas las categorías</option>
+        </select>
+      </div>
+      <div id="tx-list" class="space-y-2"></div>
+    </section>
+  </div>
+
+  <!-- MODAL GESTOR DE CATEGORÍAS -->
+  <div id="cat-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-sm p-5 space-y-4 max-h-[85vh] flex flex-col">
+      <div class="flex justify-between items-center">
+        <h3 class="text-base font-bold text-white">Editar Categorías</h3>
+        <button id="close-cat-modal" class="text-slate-400 hover:text-white text-sm">✕</button>
+      </div>
+      <form id="new-cat-form" class="flex gap-2">
+        <input type="text" id="new-cat-name" placeholder="Nueva categoría..." required class="flex-1 bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500">
+        <button type="submit" class="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold px-3 py-2 rounded-lg">Añadir</button>
+      </form>
+      <div id="cat-list" class="space-y-2 overflow-y-auto flex-1 pr-1"></div>
+    </div>
+  </div>
+
+  <!-- MODAL GRUPO FAMILIAR -->
+  <div id="group-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-sm p-5 space-y-5">
+      <div class="flex justify-between items-center">
+        <h3 class="text-base font-bold text-white">Fondo Común Familiar</h3>
+        <button id="close-group-modal" class="text-slate-400 hover:text-white text-sm">✕</button>
+      </div>
+
+      <!-- Crear grupo nuevo -->
+      <form id="create-group-form" class="space-y-2.5">
+        <label class="block text-xs font-semibold text-indigo-300">Crear un grupo nuevo</label>
+        <input type="text" id="new-group-name" placeholder="Ej. Casa / Hogar" required class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm">
+        <input type="text" id="creator-alias" placeholder="Tu nombre o apodo (Ej. Eduardo)" required class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm">
+        <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold py-2.5 rounded-lg">Crear Grupo y Obtener Código</button>
+      </form>
+
+      <div class="border-t border-slate-800 pt-4">
+        <!-- Unirse con código -->
+        <form id="join-group-form" class="space-y-2.5">
+          <label class="block text-xs font-semibold text-emerald-300">Unirse a un grupo existente</label>
+          <input type="text" id="join-group-code" placeholder="Código de 6 letras (Ej. a1b2c3)" required class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm lowercase">
+          <input type="text" id="joiner-alias" placeholder="Tu nombre o apodo" required class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm">
+          <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold py-2.5 rounded-lg">Unirme al Grupo</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL NUEVA META DE AHORRO -->
+  <div id="saving-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-sm p-5 space-y-4">
+      <div class="flex justify-between items-center">
+        <h3 class="text-base font-bold text-white">Nueva Meta de Ahorro</h3>
+        <button id="close-saving-modal" class="text-slate-400 hover:text-white text-sm">✕</button>
+      </div>
+      <form id="new-saving-form" class="space-y-3">
+        <div>
+          <label class="block text-xs text-slate-400 mb-1">Nombre de la meta</label>
+          <input type="text" id="saving-name" placeholder="Ej. Fondo de emergencia, Vacaciones, Auto" required class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm">
+        </div>
+        <div>
+          <label class="block text-xs text-slate-400 mb-1">Monto objetivo ($)</label>
+          <input type="number" step="0.01" id="saving-target" placeholder="1000.00" required class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm">
+        </div>
+        <div>
+          <label class="block text-xs text-slate-400 mb-1">Monto inicial (opcional)</label>
+          <input type="number" step="0.01" id="saving-initial" value="0" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm">
+        </div>
+        <button type="submit" class="w-full bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-semibold py-2.5 rounded-lg">Crear Meta</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL VISOR DE RECIBO -->
+  <div id="receipt-modal" class="fixed inset-0 bg-black/90 hidden items-center justify-center p-4 z-50">
+    <div class="relative max-w-md w-full bg-slate-900 border border-slate-800 rounded-2xl p-3 space-y-3">
+      <div class="flex justify-between items-center px-1">
+        <span class="text-xs font-semibold text-slate-300">Comprobante adjunto</span>
+        <button id="close-receipt-modal" class="text-slate-400 hover:text-white text-sm">✕ Cerrar</button>
+      </div>
+      <img id="receipt-preview-img" src="" alt="Recibo" class="w-full max-h-[75vh] object-contain rounded-xl bg-black">
+    </div>
+  </div>
+
+  <script src="./app.js"></script>
+</body>
+</html>
