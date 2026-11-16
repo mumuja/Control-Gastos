@@ -185,14 +185,15 @@ workspaceSelect.addEventListener('change', async () => {
 });
 
 async function refrescarTodoElEspacio() {
+  const groupActionsBar = document.getElementById('group-actions-bar');
   if (currentGrupoId) {
     const g = gruposCache.find(x => x.id === currentGrupoId);
-    groupCodeBadge.textContent = `Código invitación: ${g.codigo}`;
-    groupCodeBadge.classList.remove('hidden');
+    groupCodeBadge.textContent = `Código: ${g.codigo}`;
+    groupActionsBar.classList.remove('hidden');
     document.getElementById('balance-label').textContent = `Fondo común: ${g.nombre}`;
     document.getElementById('savings-subtitle').textContent = `Ahorros compartidos (${g.nombre})`;
   } else {
-    groupCodeBadge.classList.add('hidden');
+    groupActionsBar.classList.add('hidden');
     document.getElementById('balance-label').textContent = 'Balance real del periodo';
     document.getElementById('savings-subtitle').textContent = 'Ahorro personal';
   }
@@ -260,7 +261,35 @@ document.getElementById('join-group-form').addEventListener('submit', async (e) 
   workspaceSelect.value = grupo.id;
   await refrescarTodoElEspacio();
 });
+// Eliminar grupo (si eres creador) o salir de él (si eres invitado)
+document.getElementById('delete-group-btn').addEventListener('click', async () => {
+  if (!currentGrupoId) return;
+  const g = gruposCache.find(x => x.id === currentGrupoId);
+  
+  const confirmar = confirm(
+    `¿Seguro que deseas eliminar o salir del grupo "${g.nombre}"?\n\nSi eres el creador, se borrarán todos los movimientos y ahorros de este grupo permanentemente.`
+  );
+  if (!confirmar) return;
 
+  // Intentar borrar el grupo (funcionará si eres el creador)
+  const { error: delGroupErr } = await supabaseClient
+    .from('grupos')
+    .delete()
+    .eq('id', currentGrupoId);
+
+  // Si no eres el creador, simplemente te saca de grupo_miembros
+  if (delGroupErr) {
+    await supabaseClient
+      .from('grupo_miembros')
+      .delete()
+      .eq('grupo_id', currentGrupoId)
+      .eq('user_id', currentUser.id);
+  }
+
+  currentGrupoId = null;
+  await cargarGrupos();
+  await refrescarTodoElEspacio();
+});
 // --- COMPRESIÓN Y SUBIDA DE RECIBOS ---
 function comprimirImagen(file, maxWidth = 1000, quality = 0.72) {
   return new Promise((resolve, reject) => {
